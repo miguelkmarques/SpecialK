@@ -2704,6 +2704,23 @@ SK_DXGI_PresentBase ( IDXGISwapChain         *This,
   if (This == nullptr) // This can't happen, just humor static analysis
     return DXGI_ERROR_INVALID_CALL;
 
+  static bool sk_dxgi_time_initialized = false;
+  static std::chrono::steady_clock::time_point sk_dxgi_init_time;
+  static bool sk_dxgi_time_expired = false;
+
+  if (!sk_dxgi_time_expired) {
+    if (!sk_dxgi_time_initialized) {
+      sk_dxgi_init_time = std::chrono::steady_clock::now();
+      sk_dxgi_time_initialized = true;
+    }
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - sk_dxgi_init_time).count();
+    if (elapsed < 20) {
+      return S_OK;
+    }
+    sk_dxgi_time_expired = true;
+  }
+
   SK_RenderBackend& rb =
     SK_GetCurrentRenderBackend ();
 
